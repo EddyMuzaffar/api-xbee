@@ -1,7 +1,6 @@
 var SerialPort = require('serialport');
 var xbee_api = require('xbee-api');
 var C = xbee_api.constants;
-var waterrate = 0;
 //var storage = require("./storage")
 require('dotenv').config()
 
@@ -68,10 +67,9 @@ client.on("connect", () => {
       //storage.registerSensor(frame.remote64)
   
     } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
-      waterrate = frame.analogSamples.AD2*100/1024;
       client.subscribe("humidityrate", (err) => {
         if (!err) {
-          client.publish("humidityrate", waterrate);
+          client.publish("humidityrate", (frame.analogSamples.AD2*100/1024).toString());
         }
       });
       // try {
