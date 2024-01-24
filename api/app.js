@@ -6,9 +6,6 @@ const mqtt = require('mqtt');
 
 
 
-
-
-
 app.use(express.json());
 const { MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
 const uri = "mongodb+srv://waterate:vOndAQfmY5PFOcK3@cluster0.7fw2ar9.mongodb.net/?retryWrites=true&w=majority";
@@ -58,8 +55,9 @@ clientMqtt.on('connect', () => {
 clientMqtt.on('message', async (topic, message) => {
     console.log(`Message reçu sur le canal ${topic}: ${message}`);
     try {
+        const binaryData = atob(message);
         const newDocument = {
-            "water-rate": message,
+            "water-rate": binaryData,
             date: getDate()
         };
         collection = await db.collection("water-rate")
