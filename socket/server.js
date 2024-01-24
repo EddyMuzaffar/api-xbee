@@ -1,7 +1,6 @@
 var SerialPort = require('serialport');
 var xbee_api = require('xbee-api');
 var C = xbee_api.constants;
-//var storage = require("./storage")
 require('dotenv').config()
 
 
@@ -10,7 +9,7 @@ const mqtt = require("mqtt");
 const client = mqtt.connect("mqtt://test.mosquitto.org");
 
 var xbeeAPI = new xbee_api.XBeeAPI({
-  api_mode: 2
+  api_mode: 1
 });
 
 let serialport = new SerialPort(SERIAL_PORT, {
@@ -47,7 +46,7 @@ client.on("connect", () => {
         if (!err) {
           client.publish("humidityrate", (frame.analogSamples.AD2*100/1024).toString());
         } else {
-          console.error(`Erreur lors de l'abonnement au canal triggerwater:`, err);
+          console.error(`Erreur lors de l'abonnement au canal humidityrate:`, err);
         }
       });
     } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
