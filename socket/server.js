@@ -1,7 +1,7 @@
 var SerialPort = require('serialport');
 var xbee_api = require('xbee-api');
 var C = xbee_api.constants;
-var h2o_rate = 0;
+var waterrate = 0;
 //var storage = require("./storage")
 require('dotenv').config()
 
@@ -68,15 +68,26 @@ client.on("connect", () => {
       //storage.registerSensor(frame.remote64)
   
     } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
-      h2o_rate = frame.analogSamples.AD2*100/1024;
-      if(h2o_rate <= 20) {
+      waterrate = frame.analogSamples.AD2*100/1024;
+      if(waterrate <= 20) {
         client.subscribe("Humidity rate", (err) => {
           if (!err) {
-            client.publish("Humidity rate", "The humidity rate of the plant is low (" + h2o_rate + "%)");
+            client.publish("Humidity rate", "The humidity rate of the plant is low (" + waterrate + "%)");
           }
         });
       }
-      module.exports = h2o_rate;
+      // fetch('/water-rate', {
+      //   method: "POST",
+      //   headers: {
+      //     'Accept': 'application/json',
+      //     'Content-Type': 'application/json'  
+      //   },
+      //   body: {
+      //     waterrate: waterrate
+      //   }
+      // })
+      // .then(response => console.log(JSON.stringify(response)));
+
 
       // frame_obj = {
       //   type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
