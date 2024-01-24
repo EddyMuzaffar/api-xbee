@@ -11,7 +11,7 @@ const mqtt = require("mqtt");
 const client = mqtt.connect("mqtt://test.mosquitto.org");
 
 var xbeeAPI = new xbee_api.XBeeAPI({
-  api_mode: 2
+  api_mode: 1
 });
 
 let serialport = new SerialPort(SERIAL_PORT, {
@@ -69,24 +69,19 @@ client.on("connect", () => {
   
     } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
       waterrate = frame.analogSamples.AD2*100/1024;
-      if(waterrate <= 20) {
-        client.subscribe("Humidity rate", (err) => {
-          if (!err) {
-            client.publish("Humidity rate", "The humidity rate of the plant is low (" + waterrate + "%)");
-          }
-        });
-      }
-      // fetch('/water-rate', {
-      //   method: "POST",
-      //   headers: {
-      //     'Accept': 'application/json',
-      //     'Content-Type': 'application/json'  
-      //   },
-      //   body: {
-      //     waterrate: waterrate
-      //   }
-      // })
-      // .then(response => console.log(JSON.stringify(response)));
+      client.subscribe("humidityrate", (err) => {
+        if (!err) {
+          client.publish("humidityrate", waterrate);
+        }
+      });
+      // try {
+      //   const response = axios.post(`${apiURL}/water-rate`, { 
+      //     rate : waterrate 
+      //   });
+      //   console.log(response.data);
+      // } catch (error) {
+      //     console.error('Error sending water rate:', error.message);
+      // }
 
 
       // frame_obj = {
