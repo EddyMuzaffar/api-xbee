@@ -2,6 +2,7 @@ var SerialPort = require('serialport');
 var xbee_api = require('xbee-api');
 var C = xbee_api.constants;
 require('dotenv').config()
+var humidity_rate;
 
 
 const SERIAL_PORT = process.env.SERIAL_PORT;
@@ -41,13 +42,24 @@ client.on("connect", () => {
       if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
         console.log("NODE_IDENTIFICATION");
       } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
+        humidity_rate = (frame.analogSamples.AD2*100/1024);
         client.subscribe("humidityrate", (err) => {
           if (!err) {
-            client.publish("humidityrate", (frame.analogSamples.AD2*100/1024).toString());
+            client.publish("humidityrate", humidity_rate.toString());
           } else {
             console.error(`Erreur lors de l'abonnement au canal triggerwater:`, err);
           }
         });
+        if (humidity_rate >= 80) {
+          var remoteCommandFrame = {
+            type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
+            destination64: "0013a20041fb7750",
+            command: "D1",
+            commandParameter: [0x05],
+          };
+          
+          xbeeAPI.builder.write(remoteCommandFrame)
+        }
     } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
       console.log("REMOTE_COMMAND_RESPONSE")
       console.log(frame);
@@ -60,31 +72,17 @@ client.on("connect", () => {
   });
 
   client.on("message", (topic, message) => {
-    // message is Buffer
     console.log(topic);
     console.log(message.toString("utf-8"));
-    if(message.toString("utf-8") === "ON") {
-      console.log(message.toString("utf-8")+"on?");
+    if (message.toString("utf-8") === "ON") {
       var remoteCommandFrame = {
         type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
-        destination64: "FFFFFFFFFFFFFFFF",
+        destination64: "0013a20041fb7750",
         command: "D1",
         commandParameter: [0x04],
       };
       
       xbeeAPI.builder.write(remoteCommandFrame)
     }
-    else if (message.toString("utf-8") === "OFF") {
-      console.log(message.toString("utf-8"))+"off?";
-      var remoteCommandFrame = {
-        type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
-        destination64: "0013a20041fb7750",
-        command: "D1",
-        commandParameter: [0x05],
-      };
-      
-      xbeeAPI.builder.write(remoteCommandFrame)
-    }
   });
-
 });
