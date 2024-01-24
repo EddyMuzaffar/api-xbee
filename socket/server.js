@@ -9,7 +9,7 @@ const mqtt = require("mqtt");
 const client = mqtt.connect("mqtt://test.mosquitto.org");
 
 var xbeeAPI = new xbee_api.XBeeAPI({
-  api_mode: 1
+  api_mode: 2
 });
 
 let serialport = new SerialPort(SERIAL_PORT, {
@@ -30,32 +30,33 @@ client.on("connect", () => {
     } else {
         console.error(`Erreur lors de l'abonnement au canal triggerwater:`, err);
     }
-  });
-
-  xbeeAPI.parser.on("data", function (frame) {
-    if (C.FRAME_TYPE.ZIGBEE_RECEIVE_PACKET === frame.type) {
-      console.log("C.FRAME_TYPE.ZIGBEE_RECEIVE_PACKET");
-      let dataReceived = String.fromCharCode.apply(null, frame.data);
-      console.log(">> ZIGBEE_RECEIVE_PACKET >", dataReceived);
-    }
-  
-    if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
-      console.log("NODE_IDENTIFICATION");
-    } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
-      client.subscribe("humidityrate", (err) => {
-        if (!err) {
-          client.publish("humidityrate", (frame.analogSamples.AD2*100/1024).toString());
-        } else {
-          console.error(`Erreur lors de l'abonnement au canal humidityrate:`, err);
-        }
-      });
+    });
+    xbeeAPI.parser.on("data", function (frame) {
+      if (C.FRAME_TYPE.ZIGBEE_RECEIVE_PACKET === frame.type) {
+        console.log("C.FRAME_TYPE.ZIGBEE_RECEIVE_PACKET");
+        let dataReceived = String.fromCharCode.apply(null, frame.data);
+        console.log(">> ZIGBEE_RECEIVE_PACKET >", dataReceived);
+      }
+    
+      if (C.FRAME_TYPE.NODE_IDENTIFICATION === frame.type) {
+        console.log("NODE_IDENTIFICATION");
+      } else if (C.FRAME_TYPE.ZIGBEE_IO_DATA_SAMPLE_RX === frame.type) {
+        client.subscribe("humidityrate", (err) => {
+          if (!err) {
+            client.publish("humidityrate", (frame.analogSamples.AD2*100/1024).toString());
+          } else {
+            console.error(`Erreur lors de l'abonnement au canal triggerwater:`, err);
+          }
+        });
     } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
+      console.log("REMOTE_COMMAND_RESPONSE")
       console.log(frame);
     } else {
       console.debug(frame);
       let dataReceived = String.fromCharCode.apply(null, frame.commandData)
       console.log(dataReceived);
     }
+
   });
 
   client.on("message", (topic, message) => {
@@ -63,6 +64,7 @@ client.on("connect", () => {
     console.log(topic);
     console.log(message.toString("utf-8"));
     if(message.toString("utf-8") === "ON") {
+      console.log(message.toString("utf-8")+"on?");
       var remoteCommandFrame = {
         type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
         destination64: "FFFFFFFFFFFFFFFF",
@@ -73,6 +75,7 @@ client.on("connect", () => {
       xbeeAPI.builder.write(remoteCommandFrame)
     }
     else if (message.toString("utf-8") === "OFF") {
+      console.log(message.toString("utf-8"))+"off?";
       var remoteCommandFrame = {
         type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
         destination64: "0013a20041fb7750",
@@ -83,4 +86,5 @@ client.on("connect", () => {
       xbeeAPI.builder.write(remoteCommandFrame)
     }
   });
+
 });
