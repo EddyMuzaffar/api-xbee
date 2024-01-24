@@ -1,6 +1,13 @@
 const express = require('express')
 const app = express()
 const axios = require('axios')
+const mqtt = require('mqtt');
+
+
+
+
+
+
 
 app.use(express.json());
 const { MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
@@ -17,6 +24,9 @@ const client = new MongoClient(uri, {
 
 let collection = null
 let db = null
+
+const brokerUrl = 'mqtt://test.mosquitto.org';
+const channelToSubscribe = 'humidityrate';
 async function run() {
     try {
        var con =  await client.connect();
@@ -31,6 +41,34 @@ async function run() {
 // Move the client.close() outside the finally block
 run().catch(console.dir);
 
+const clientMqtt = mqtt.connect(brokerUrl);
+
+
+clientMqtt.on('connect', () => {
+    console.log('Connecté au broker MQTT');
+    clientMqtt.subscribe(channelToSubscribe, (err) => {
+        if (!err) {
+            console.log(`Abonné au canal ${channelToSubscribe}`);
+        } else {
+            console.error(`Erreur lors de l'abonnement au canal ${channelToSubscribe}:`, err);
+        }
+    });
+});
+
+clientMqtt.on('message', async (topic, message) => {
+    console.log(`Message reçu sur le canal ${topic}: ${message}`);
+    try {
+        const newDocument = {
+            "water-rate": message,
+            date: getDate()
+        };
+        collection = await db.collection("water-rate")
+       await collection.insertOne(newDocument);
+    } catch (error) {
+        console.error('Error processing water-rate post request:', error);
+    }
+
+});
 
 app.post('/water-rate', async (req, res) => {
     try {
