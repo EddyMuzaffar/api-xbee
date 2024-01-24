@@ -55,9 +55,11 @@ clientMqtt.on('connect', () => {
 clientMqtt.on('message', async (topic, message) => {
     console.log(`Message reçu sur le canal ${topic}: ${message}`);
     try {
-        const binaryData = atob(message);
+        const binaryData = Buffer.from(message);
+
+        const numberValue = binaryData.toString('utf-8');
         const newDocument = {
-            "water-rate": binaryData,
+            "water-rate": numberValue,
             date: getDate()
         };
         collection = await db.collection("water-rate")
@@ -99,6 +101,7 @@ app.get('/water-rate/last', async (req,res) => {
             .sort({ _id: -1 })
             .limit(1)
             .toArray();
+
     }catch (err){
         res.status(500).json({success: false,data: "erreur serveur"})
         return
@@ -107,6 +110,8 @@ app.get('/water-rate/last', async (req,res) => {
 
     if (results.length > 0) {
         const lastInsertedDocument = results[0];
+
+
         res.status(200).json({success: true,data: lastInsertedDocument})
     } else {
         res.status(404).json({success: false,message:  "Aucun valeur trouvé"})
