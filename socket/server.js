@@ -6,6 +6,8 @@ require('dotenv').config()
 
 
 const SERIAL_PORT = process.env.SERIAL_PORT;
+const mqtt = require("mqtt");
+const client = mqtt.connect("mqtt://test.mosquitto.org");
 
 var xbeeAPI = new xbee_api.XBeeAPI({
   api_mode: 2
@@ -111,6 +113,7 @@ client.on("connect", () => {
 
   } else if (C.FRAME_TYPE.REMOTE_COMMAND_RESPONSE === frame.type) {
     console.log("REMOTE_COMMAND_RESPONSE")
+    console.log(frame);
   } else {
     console.debug(frame);
     let dataReceived = String.fromCharCode.apply(null, frame.commandData)
@@ -122,8 +125,9 @@ client.on("connect", () => {
 client.on("message", (topic, message) => {
   // message is Buffer
   console.log(topic);
-  console.log(message.toString());
-  if(topic === "triggerwater" && message === "open") {
+  console.log(message.toString("utf-8"));
+  if(message.toString("utf-8") === "ON") {
+    console.log(message.toString("utf-8")+"on?");
     var remoteCommandFrame = {
       type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
       destination64: "FFFFFFFFFFFFFFFF",
@@ -133,10 +137,11 @@ client.on("message", (topic, message) => {
     
     xbeeAPI.builder.write(remoteCommandFrame)
   }
-  else if (topic === "triggerwater" && message === "close") {
+  else if (message.toString("utf-8") === "OFF") {
+    console.log(message.toString("utf-8"))+"off?";
     var remoteCommandFrame = {
       type: C.FRAME_TYPE.REMOTE_AT_COMMAND_REQUEST,
-      destination64: "FFFFFFFFFFFFFFFF",
+      destination64: "0013a20041fb7750",
       command: "D1",
       commandParameter: [0x05],
     };
